@@ -16,14 +16,14 @@ import {
 import { MyQuery, MyDataSourceOptions, defaultQuery, StreamMetadata } from './types';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
-    privateKey: string;
+    sessionToken: string;
     streamId: string;
     noAddedFields: boolean;
 
     constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
         super(instanceSettings);
 
-        this.privateKey = instanceSettings.jsonData.privateKey;
+        this.sessionToken = instanceSettings.jsonData.sessionToken;
         this.streamId = instanceSettings.jsonData.streamId;
         this.noAddedFields = true;
     }
@@ -32,12 +32,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         const observables = options.targets.map((target) => {
             const query = defaults(target, defaultQuery);
             const refId = query.refId;
-
-            const streamrClient = new StreamrClient({
-                auth: {
-                    privateKey: this.privateKey,
-                },
-            });
+            const stream = this.streamId;
+            const sessionToken = this.sessionToken;
+            const streamrClient = new StreamrClient({ auth: { sessionToken } });
 
             return new Observable<DataQueryResponse>((subscriber) => {
                 const frame = new CircularDataFrame({
@@ -48,38 +45,30 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
                 frame.refId = query.refId;
                 frame.addField({ name: 'time', type: FieldType.time });
 
-                streamrClient.subscribe(
-                    {
-                        stream: this.streamId,
-                    },
-                    (payload: JSON, metadata: Object) => {
-                        if (!payload || !metadata) {
-                            return;
-                        }
-
-                        const { messageId } = metadata as StreamMetadata;
-                        const time = messageId.timestamp;
-
-                        if (this.noAddedFields) {
-                            for (const [key, value] of Object.entries(payload)) {
-                                frame.addField({
-                                    name: key,
-                                    type: this.getValueType(value),
-                                });
-                            }
-
-                            this.noAddedFields = false;
-                        }
-
-                        frame.add({ time, ...payload });
-
-                        subscriber.next({
-                            data: [frame],
-                            key: refId,
-                            state: LoadingState.Streaming,
-                        });
+                streamrClient.subscribe({ stream }, (payload: JSON, metadata: Object) => {
+                    if (!payload || !metadata) {
+                        return;
                     }
-                );
+
+                    const { messageId } = metadata as StreamMetadata;
+                    const time = messageId.timestamp;
+
+                    if (this.noAddedFields) {
+                        for (const [key, value] of Object.entries(payload)) {
+                            frame.addField({ name: key, type: this.getValueType(value) });
+                        }
+
+                        this.noAddedFields = false;
+                    }
+
+                    frame.add({ time, ...payload });
+
+                    subscriber.next({
+                        data: [frame],
+                        key: refId,
+                        state: LoadingState.Streaming,
+                    });
+                });
             });
         });
 
@@ -108,7 +97,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
     testDatasource(): Promise<any> {
         return new Promise(async (resolve, reject) => {
-            if (!this.privateKey) {
+            if (!this.sessionToken) {
                 return reject({
                     status: 'error',
                     message: 'Streamr Private Key is required',
@@ -122,25 +111,32 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
                 });
             }
 
-            const streamrClient = new StreamrClient({
-                auth: {
-                    privateKey: this.privateKey,
-                },
-            });
+            try {
+                const streamrClient = new StreamrClient({
+                    auth: {
+                        sessionToken: this.sessionToken,
+                    },
+                });
 
-            const stream = await streamrClient.getStream(this.streamId);
+                const stream = await streamrClient.getStream(this.streamId);
 
-            if (stream.id) {
-                return resolve({
-                    status: 'success',
-                    message: `Successfully fetched stream "${stream.name}"`,
+                if (stream.id) {
+                    return resolve({
+                        status: 'success',
+                        message: `Successfully fetched stream "${stream.name}"`,
+                    });
+                }
+
+                return reject({
+                    status: 'error',
+                    message: 'Failed to fetch the stream',
+                });
+            } catch (error) {
+                return reject({
+                    status: 'error',
+                    message: error.message,
                 });
             }
-
-            return reject({
-                status: 'error',
-                message: 'Failed to fetch the stream',
-            });
         });
     }
 }

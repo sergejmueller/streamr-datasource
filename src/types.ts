@@ -10,8 +10,12 @@ export const defaultQuery: Partial<MyQuery> = {
 };
 
 export interface MyDataSourceOptions extends DataSourceJsonData {
-    privateKey: string;
     streamId: string;
+    sessionToken: string;
+}
+
+export interface MySecureJsonData {
+    privateKey: string;
 }
 
 export interface StreamMetadata {
