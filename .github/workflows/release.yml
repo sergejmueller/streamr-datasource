@@ -106,7 +106,7 @@ jobs:
           echo "::set-output name=path::release_notes.md"
 
       - name: Check package version
-        run: if [ "${{ steps.metadata.outputs.plugin-version }}" != "${{ steps.metadata.outputs.github-tag }}" ]; then printf "\033[0;31mPlugin version doesn't match tag name\033[0m\n"; exit 1; fi
+        run: if [ "v${{ steps.metadata.outputs.plugin-version }}" != "${{ steps.metadata.outputs.github-tag }}" ]; then printf "\033[0;31mPlugin version doesn't match tag name\033[0m\n"; exit 1; fi
 
       - name: Package plugin
         id: package-plugin
@@ -161,4 +161,4 @@ jobs:
         run: |
           echo A draft release has been created for your plugin. Please review and publish it. Then submit your plugin to grafana.com/plugins by opening a PR to https://github.com/grafana/grafana-plugin-repository with the following entry:
           echo
-          echo '{ "id": "${{ steps.metadata.outputs.plugin-id }}", "type": "${{ steps.metadata.outputs.plugin-type }}", "url": "https://github.com/${{ github.repository }}", "versions": [ { "version": "${{ steps.metadata.outputs.plugin-version }}", "commit": "${{ github.sha }}", "url": "https://github.com/${{ github.repository }}", "download": { "any": { "url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.metadata.outputs.plugin-version }}/${{ steps.metadata.outputs.archive }}", "md5": "${{ steps.package-plugin.outputs.checksum }}" } } } ] }' | jq .
+          echo '{ "id": "${{ steps.metadata.outputs.plugin-id }}", "type": "${{ steps.metadata.outputs.plugin-type }}", "url": "https://github.com/${{ github.repository }}", "versions": [ { "version": "${{ steps.metadata.outputs.plugin-version }}", "commit": "${{ github.sha }}", "url": "https://github.com/${{ github.repository }}", "download": { "any": { "url": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.metadata.outputs.archive }}", "md5": "${{ steps.package-plugin.outputs.checksum }}" } } } ] }' | jq .
