@@ -1,5 +1,8 @@
 ### Changelog
 
+#### 1.2.2 (2021-02-05)
+* Add screenshots
+
 #### 1.2.1 (2021-02-05)
 * Remove versioning from `release.yml`
 
