@@ -20,7 +20,10 @@
             "small": "img/logo.svg",
             "large": "img/logo.svg"
         },
-        "screenshots": [],
+        "screenshots": [
+            { "name": "datasource", "path": "img/screenshot-datasource.png" },
+            { "name": "panel", "path": "img/screenshot-panel.png" }
+        ],
         "version": "%VERSION%",
         "updated": "%TODAY%"
     },
