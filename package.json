@@ -1,6 +1,6 @@
 {
     "name": "streamr-datasource",
-    "version": "1.2.2",
+    "version": "1.3.0",
     "description": "Streamr data source plugin for Grafana",
     "scripts": {
         "build": "grafana-toolkit plugin:build",
@@ -12,7 +12,7 @@
     "devDependencies": {
         "@grafana/data": "next",
         "@grafana/toolkit": "next",
-        "@grafana/ui": "next",
+        "@grafana/ui": "latest",
         "@types/lodash": "latest",
         "rxjs": "6.6.3",
         "streamr-client": "^4.1.6"
@@ -20,6 +20,9 @@
     "engines": {
         "node": ">=12"
     },
-    "author": "Sergej Müller",
+    "author": {
+        "name": "Sergej Müller",
+        "url": "https://sergejmueller.github.io"
+    },
     "license": "Apache-2.0"
 }

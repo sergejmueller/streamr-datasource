@@ -5,8 +5,7 @@ Beam any [Streamr](https://streamr.network) stream to [Grafana](https://grafana.
 
 #### Features
 * Any permission-granted Streamr stream as data source
-* Private key secure storing
-* Streamr API communication using `sessionToken`
+* Stream ID optional on plugin settings, can be defined as query
 * Detection of field types [*](#notes)
 * Data source health check on save
 
@@ -14,7 +13,7 @@ Beam any [Streamr](https://streamr.network) stream to [Grafana](https://grafana.
 * Go to `Configuration` → `Data Sources`
 * Click `Add data soruce`
 * Select `Streamr` as data source
-* Enter `Private Key` & `Stream ID`
+* Enter `Private Key` and `Stream ID` (optional)
 * Click `Save & Test`
 
 From now on Streamr can be selected as data source:

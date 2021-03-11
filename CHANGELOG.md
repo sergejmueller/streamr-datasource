@@ -1,5 +1,9 @@
 ### Changelog
 
+#### 1.3.0 (2021-03-11)
+* Stream ID as query param
+* Code refactoring
+
 #### 1.2.2 (2021-02-05)
 * Add screenshots
 
