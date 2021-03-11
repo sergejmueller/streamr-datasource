@@ -1,7 +1,5 @@
 // @ts-ignore
 import StreamrClient from 'streamr-client';
-import defaults from 'lodash/defaults';
-
 import { Observable, merge } from 'rxjs';
 import {
     DataQueryRequest,
@@ -13,28 +11,38 @@ import {
     LoadingState,
 } from '@grafana/data';
 
-import { MyQuery, MyDataSourceOptions, defaultQuery, StreamMetadata } from './types';
+import { MyQuery, MyDataSourceOptions, StreamMetadata } from './types';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
-    sessionToken: string;
+    privateKey: string;
     streamId: string;
     noAddedFields: boolean;
 
     constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
         super(instanceSettings);
 
-        this.sessionToken = instanceSettings.jsonData.sessionToken;
+        this.privateKey = instanceSettings.jsonData.privateKey;
         this.streamId = instanceSettings.jsonData.streamId;
         this.noAddedFields = true;
     }
 
     query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
         const observables = options.targets.map((target) => {
-            const query = defaults(target, defaultQuery);
-            const refId = query.refId;
-            const stream = this.streamId;
-            const sessionToken = this.sessionToken;
-            const streamrClient = new StreamrClient({ auth: { sessionToken } });
+            const query = target;
+            const { refId } = query;
+
+            const streamId = (query.streamId || this.streamId).toString();
+            const privateKey = this.privateKey;
+
+            if (!streamId) {
+                throw new Error('Streamr Stream ID is required');
+            }
+
+            if (!privateKey) {
+                throw new Error('Streamr Private Key is required');
+            }
+
+            const streamrClient = new StreamrClient({ auth: { privateKey } });
 
             return new Observable<DataQueryResponse>((subscriber) => {
                 const frame = new CircularDataFrame({
@@ -42,10 +50,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
                     capacity: 1000,
                 });
 
-                frame.refId = query.refId;
+                frame.refId = refId;
                 frame.addField({ name: 'time', type: FieldType.time });
 
-                streamrClient.subscribe({ stream }, (payload: JSON, metadata: Object) => {
+                streamrClient.subscribe({ stream: streamId }, (payload: JSON, metadata: Object) => {
                     if (!payload || !metadata) {
                         return;
                     }
@@ -96,40 +104,46 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     }
 
     testDatasource(): Promise<any> {
+        const streamId = this.streamId;
+        const privateKey = this.privateKey;
+
         return new Promise(async (resolve, reject) => {
-            if (!this.sessionToken) {
+            if (!privateKey) {
                 return reject({
                     status: 'error',
                     message: 'Streamr Private Key is required',
                 });
             }
 
-            if (!this.streamId) {
-                return reject({
-                    status: 'error',
-                    message: 'Streamr ID is required',
-                });
-            }
-
             try {
-                const streamrClient = new StreamrClient({
-                    auth: {
-                        sessionToken: this.sessionToken,
-                    },
-                });
+                const streamrClient = new StreamrClient({ auth: { privateKey } });
 
-                const stream = await streamrClient.getStream(this.streamId);
-
-                if (stream.id) {
-                    return resolve({
-                        status: 'success',
-                        message: `Successfully fetched stream "${stream.name}"`,
+                if (streamrClient.options.auth.privateKey !== `0x${privateKey}`) {
+                    return reject({
+                        status: 'error',
+                        message: 'Invalid Private Key',
                     });
                 }
 
-                return reject({
-                    status: 'error',
-                    message: 'Failed to fetch the stream',
+                if (streamId) {
+                    const stream = await streamrClient.getStream(this.streamId);
+
+                    if (stream.id) {
+                        return resolve({
+                            status: 'success',
+                            message: `Successfully fetched stream "${stream.description || stream.name}"`,
+                        });
+                    }
+
+                    return reject({
+                        status: 'error',
+                        message: 'Failed to fetch the stream',
+                    });
+                }
+
+                return resolve({
+                    status: 'success',
+                    message: 'Successfully updated plugin settings',
                 });
             } catch (error) {
                 return reject({
