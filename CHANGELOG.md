@@ -1,5 +1,8 @@
 ### Changelog
 
+#### 1.5.0 (2021-05-03)
+* Resend data points based on Grafana dashboard time range
+
 #### 1.4.0 (2021-03-26)
 * Signed version
 

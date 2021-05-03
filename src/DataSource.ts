@@ -33,6 +33,14 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
             const streamId = (query.streamId || this.streamId).toString();
             const privateKey = this.privateKey;
+            const resend = {
+                from: {
+                    timestamp: options.range.from.valueOf(),
+                },
+                to: {
+                    timestamp: options.range.to.valueOf(),
+                },
+            };
 
             if (!streamId) {
                 throw new Error('Streamr Stream ID is required');
@@ -47,13 +55,13 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
             return new Observable<DataQueryResponse>((subscriber) => {
                 const frame = new CircularDataFrame({
                     append: 'tail',
-                    capacity: 1000,
+                    capacity: options.maxDataPoints || 10000,
                 });
 
                 frame.refId = refId;
                 frame.addField({ name: 'time', type: FieldType.time });
 
-                streamrClient.subscribe({ stream: streamId }, (payload: JSON, metadata: Object) => {
+                streamrClient.subscribe({ stream: streamId, resend }, (payload: JSON, metadata: Object) => {
                     if (!payload || !metadata) {
                         return;
                     }
